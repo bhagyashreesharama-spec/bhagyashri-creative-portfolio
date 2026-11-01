@@ -1,24 +1,20 @@
 
-// MOBILE NAVIGATION
-const menuToggle = document.querySelector(".menu-toggle");
-const navLinks = document.querySelector(".nav-links");
+const menuButton = document.querySelector(".menu-toggle");
+const nav = document.querySelector(".topbar nav");
 
-menuToggle.addEventListener("click", () => {
-  navLinks.classList.toggle("open");
-  menuToggle.textContent = navLinks.classList.contains("open") ? "✕" : "☰";
+menuButton.addEventListener("click", () => {
+  nav.classList.toggle("open");
+  menuButton.textContent = nav.classList.contains("open") ? "✕" : "☰";
 });
 
-document.querySelectorAll(".nav-links a").forEach(link => {
+nav.querySelectorAll("a").forEach(link => {
   link.addEventListener("click", () => {
-    navLinks.classList.remove("open");
-    menuToggle.textContent = "☰";
+    nav.classList.remove("open");
+    menuButton.textContent = "☰";
   });
 });
 
-
-// SCROLL REVEAL ANIMATION
-const revealElements = document.querySelectorAll(".reveal");
-
+// Reveal elements as they enter the screen
 const revealObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -26,106 +22,111 @@ const revealObserver = new IntersectionObserver((entries) => {
       revealObserver.unobserve(entry.target);
     }
   });
-}, {
-  threshold: 0.12
-});
+}, { threshold: 0.12 });
 
-revealElements.forEach(element => {
+document.querySelectorAll(".reveal").forEach(element => {
   revealObserver.observe(element);
 });
 
+// Stagger cards for a cinematic entrance
+document.querySelectorAll(".project-card, .skill-card").forEach((card, index) => {
+  card.style.transitionDelay = `${(index % 2) * 100}ms`;
+});
 
-// CURSOR GLOW
+// Scroll progress indicator
+const progressBar = document.querySelector(".progress span");
+
+function updateProgress() {
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+  progressBar.style.width = `${progress}%`;
+}
+window.addEventListener("scroll", updateProgress, { passive: true });
+updateProgress();
+
+// Cursor-following violet light
 const cursorGlow = document.querySelector(".cursor-glow");
+let pointerX = window.innerWidth / 2;
+let pointerY = window.innerHeight / 2;
 
-if (window.matchMedia("(pointer: fine)").matches) {
-  document.addEventListener("mousemove", (event) => {
-    cursorGlow.style.left = event.clientX + "px";
-    cursorGlow.style.top = event.clientY + "px";
-  });
-} else {
-  cursorGlow.style.display = "none";
-}
-
-
-// SUBTLE 3D CARD TILT
-const tiltCards = document.querySelectorAll(
-  ".skill-card, .website-card, .brand-card"
-);
-
-tiltCards.forEach(card => {
-  card.addEventListener("mousemove", (event) => {
-    if (window.innerWidth < 760) return;
-
-    const rect = card.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const rotateY = ((x / rect.width) - 0.5) * 7;
-    const rotateX = ((y / rect.height) - 0.5) * -7;
-
-    card.style.transform =
-      `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
-  });
-
-  card.addEventListener("mouseleave", () => {
-    card.style.transform = "";
-  });
+window.addEventListener("pointermove", event => {
+  pointerX = event.clientX;
+  pointerY = event.clientY;
+  cursorGlow.style.left = `${pointerX}px`;
+  cursorGlow.style.top = `${pointerY}px`;
 });
 
+// Gentle 3D movement on project and skill cards
+const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-// HERO PARALLAX
+if (canHover) {
+  document.querySelectorAll(".project-card, .skill-card").forEach(card => {
+    card.addEventListener("pointermove", event => {
+      const rect = card.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      const rotateY = (x - 0.5) * 8;
+      const rotateX = (0.5 - y) * 8;
+      card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
+
+// Hero image and stickers react gently to pointer movement
 const heroVisual = document.querySelector(".hero-visual");
+const photoFrame = document.querySelector(".photo-frame");
 
-if (heroVisual && window.matchMedia("(pointer: fine)").matches) {
-  document.addEventListener("mousemove", (event) => {
-    if (window.innerWidth < 900) return;
+if (canHover && heroVisual && photoFrame) {
+  heroVisual.addEventListener("pointermove", event => {
+    const rect = heroVisual.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    photoFrame.style.transform =
+      `rotateY(${x * 22 - 8}deg) rotateX(${-y * 14}deg)`;
+  });
 
-    const x = (event.clientX / window.innerWidth - 0.5) * 8;
-    const y = (event.clientY / window.innerHeight - 0.5) * 8;
-
-    heroVisual.style.transform =
-      `translate3d(${x}px, ${y}px, 0)`;
+  heroVisual.addEventListener("pointerleave", () => {
+    photoFrame.style.transform = "";
   });
 }
 
+// Background depth movement while scrolling
+const heroGrid = document.querySelector(".hero-grid");
+const heroOrbs = document.querySelectorAll(".hero-orb");
 
-// STICKER FLOATING MOVEMENT
-document.querySelectorAll(
-  ".character-card img, .project-character img, .journey-character img, .contact-character img"
-).forEach((sticker, index) => {
-  sticker.style.animationDelay = `${index * 0.4}s`;
-});
+window.addEventListener("scroll", () => {
+  const scrollY = window.scrollY;
 
+  if (heroGrid) {
+    heroGrid.style.transform = `translateY(${scrollY * 0.16}px)`;
+  }
 
-// ACTIVE NAVIGATION HIGHLIGHT
-const sections = document.querySelectorAll("main section[id]");
-const navigationLinks = document.querySelectorAll(".nav-links a");
-
-const sectionObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      navigationLinks.forEach(link => {
-        link.classList.toggle(
-          "active",
-          link.getAttribute("href") === `#${entry.target.id}`
-        );
-      });
-    }
+  heroOrbs.forEach((orb, index) => {
+    orb.style.translate = `0 ${scrollY * (index % 2 ? -0.08 : 0.06)}px`;
   });
-}, {
-  rootMargin: "-35% 0px -55% 0px"
-});
+}, { passive: true });
 
-sections.forEach(section => {
-  sectionObserver.observe(section);
-});
+// Small floating particles in the hero background
+const hero = document.querySelector(".hero");
 
+if (hero) {
+  const particleCount = window.innerWidth < 650 ? 15 : 28;
 
-// CURRENT YEAR
-const footerYear = document.querySelector(".footer span:last-child");
-
-if (footerYear) {
-  footerYear.textContent =
-    `© ${new Date().getFullYear()} Bhagyashri Sharma`;
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement("span");
+    particle.className = "particle";
+    particle.style.left = `${Math.random() * 100}%`;
+    particle.style.top = `${Math.random() * 100}%`;
+    particle.style.animationDelay = `${Math.random() * 8}s`;
+    particle.style.animationDuration = `${5 + Math.random() * 8}s`;
+    hero.appendChild(particle);
+  }
 }
+
+// Current year in footer
+document.getElementById("year").textContent = new Date().getFullYear();
+
